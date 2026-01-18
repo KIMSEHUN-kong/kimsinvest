@@ -369,7 +369,8 @@ function App() {
             title={selectedIdea.title} 
             protagonistName={protagonistName} 
             scriptType={scriptType}
-            onBack={reset} 
+            onBack={reset}
+            onResetKey={handleResetApiKey}
           />
         )}
       </div>

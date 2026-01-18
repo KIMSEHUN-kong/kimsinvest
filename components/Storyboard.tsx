@@ -12,6 +12,7 @@ interface StoryboardProps {
   protagonist: Protagonist;
   setProtagonist: React.Dispatch<React.SetStateAction<Protagonist>>;
   scriptType: ScriptType;
+  onResetKey: () => void;
 }
 
 const VOICES = [
@@ -37,7 +38,7 @@ async function promiseAllStepByStep<T>(items: any[], asyncFn: (item: any) => Pro
   }
 }
 
-export const Storyboard: React.FC<StoryboardProps> = ({ script, protagonistName, scenes = [], setScenes, protagonist, setProtagonist, scriptType }) => {
+export const Storyboard: React.FC<StoryboardProps> = ({ script, protagonistName, scenes = [], setScenes, protagonist, setProtagonist, scriptType, onResetKey }) => {
   const [isGeneratingProtagonist, setIsGeneratingProtagonist] = useState(false);
   const [isLoadingScenes, setIsLoadingScenes] = useState(false);
   const [isProcessingAll, setIsProcessingAll] = useState(false);
@@ -63,13 +64,6 @@ export const Storyboard: React.FC<StoryboardProps> = ({ script, protagonistName,
         reader.readAsDataURL(blob);
       });
     } catch (e) { return ""; }
-  };
-
-  const handleOpenSelectKey = async () => {
-    if ((window as any).aistudio?.openSelectKey) {
-      await (window as any).aistudio.openSelectKey();
-      setQuotaError(null);
-    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -273,14 +267,14 @@ export const Storyboard: React.FC<StoryboardProps> = ({ script, protagonistName,
           <div className="flex-1 space-y-3">
             <h4 className="font-bold text-amber-900">API 할당량 초과 안내</h4>
             <p className="text-sm text-amber-800 leading-relaxed">
-              {quotaError} 현재 더 많은 작업을 수행하기 위해서는 개인 API 키를 등록해야 합니다.
+              {quotaError} 현재 더 많은 작업을 수행하기 위해서는 새로운 API 키를 등록하거나 잠시 후 시도해야 합니다.
             </p>
             <div className="flex flex-wrap gap-2">
               <button 
-                onClick={handleOpenSelectKey}
+                onClick={onResetKey}
                 className="bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-amber-700 transition-colors flex items-center gap-2 shadow-sm"
               >
-                <Key size={14} /> 개인 API 키 연동 (Open AI Studio)
+                <Key size={14} /> API 키 변경하기
               </button>
               <a 
                 href="https://ai.google.dev/gemini-api/docs/billing" 
