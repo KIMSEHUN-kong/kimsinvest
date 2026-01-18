@@ -6,6 +6,15 @@ const TEXT_MODEL = "gemini-3-flash-preview";
 const IMAGE_MODEL = "gemini-2.5-flash-image";
 const SPEECH_MODEL = "gemini-2.5-flash-preview-tts";
 
+// API 키 가져오기 헬퍼 함수 (로컬 스토리지 우선, 그 후 환경 변수)
+const getApiKey = (): string => {
+  if (typeof window !== "undefined") {
+    const storedKey = localStorage.getItem("GEMINI_API_KEY");
+    if (storedKey) return storedKey;
+  }
+  return process.env.API_KEY || "";
+};
+
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
@@ -70,7 +79,7 @@ const pcmToWav = (base64Pcm: string, sampleRate: number = 24000): string => {
 };
 
 export const generateVideoIdeas = async (keyword?: string): Promise<VideoIdea[]> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   const prompt = `당신은 한국 YouTube 금융/재테크 채널의 바이럴 제목 전문가입니다.
 아래 규칙을 따라 "${keyword || '금융 교육, 재테크'}" 주제로 클릭을 유도하는 한국어 제목 아이디어 5개를 만드세요.
 
@@ -120,7 +129,7 @@ export const generateVideoIdeas = async (keyword?: string): Promise<VideoIdea[]>
 };
 
 export const generateScript = async (title: string, protagonistName: string, type: ScriptType): Promise<ScriptResponse> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   const isShorts = type === 'shorts';
   
   const prompt = `
@@ -189,7 +198,7 @@ export const generateScript = async (title: string, protagonistName: string, typ
 };
 
 export const extractScenesFromScript = async (script: string, protagonistDesc: string, isShorts: boolean): Promise<Scene[]> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   const prompt = `아래 대본을 ${isShorts ? '10~12개' : '35~50개'} 장면으로 나누어 비주얼 스토리보드를 구성하라.
     
     [CRITICAL: 대본 보존 규칙]
@@ -238,7 +247,7 @@ export const extractScenesFromScript = async (script: string, protagonistDesc: s
 };
 
 export const generateImage = async (prompt: string, aspectRatio: string = "16:9", protagonistDesc: string = "", referenceImageBase64?: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   const primaryStyle = "High-quality Chibi character design, cute vector art, 2.5 heads tall ratio, big expressive eyes, thick black outlines, flat cartoon colors";
   const fallbackStyle = "Simplified 2D cartoon illustration, clean lines, basic shapes, bright colors, minimalist character art";
 
@@ -291,7 +300,7 @@ export const generateImage = async (prompt: string, aspectRatio: string = "16:9"
 };
 
 export const generateSpeech = async (text: string, voiceName: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   if (!text || !text.trim()) return "";
   
   try {

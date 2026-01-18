@@ -5,13 +5,14 @@ import { IdeaList } from './components/IdeaList';
 import { ScriptViewer } from './components/ScriptViewer';
 import { VideoIdea, ScriptSection, ScriptType } from './types';
 import { generateVideoIdeas, generateScript } from './services/geminiService';
-import { User, Loader2, Lightbulb, Zap, FileText, Search, Key, AlertCircle, ShieldCheck, Lock, ChevronRight, TrendingUp } from 'lucide-react';
+import { User, Loader2, Lightbulb, Zap, FileText, Search, Key, AlertCircle, ShieldCheck, Lock, ChevronRight, TrendingUp, CheckCircle2 } from 'lucide-react';
 
 const DEFAULT_NAME = "경제";
 
 function App() {
   // API Key State
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState("");
   const [isCheckingKey, setIsCheckingKey] = useState(true);
 
   // App State
@@ -30,36 +31,41 @@ function App() {
 
   // Initialize API Key Check
   useEffect(() => {
-    const checkKey = async () => {
-      try {
-        if ((window as any).aistudio?.hasSelectedApiKey) {
-          const has = await (window as any).aistudio.hasSelectedApiKey();
-          setHasApiKey(has);
-        }
-      } catch (e) {
-        console.warn("API Key check failed", e);
-      } finally {
-        setIsCheckingKey(false);
-      }
-    };
-    checkKey();
+    // Check localStorage first
+    const storedKey = localStorage.getItem("GEMINI_API_KEY");
+    if (storedKey) {
+      setHasApiKey(true);
+    }
+    setIsCheckingKey(false);
   }, []);
 
-  const handleOpenSelectKey = async () => {
-    if ((window as any).aistudio?.openSelectKey) {
-      await (window as any).aistudio.openSelectKey();
-      setHasApiKey(true);
-      setError(null);
-      setIsQuotaExceeded(false);
+  const handleSaveApiKey = () => {
+    if (!apiKeyInput.trim()) {
+      setError("API 키를 입력해주세요.");
+      return;
     }
+    if (!apiKeyInput.startsWith("AIza")) {
+      setError("유효하지 않은 API 키 형식입니다. 'AIza'로 시작하는 키를 입력해주세요.");
+      return;
+    }
+    localStorage.setItem("GEMINI_API_KEY", apiKeyInput.trim());
+    setHasApiKey(true);
+    setError(null);
+  };
+
+  const handleResetApiKey = () => {
+    localStorage.removeItem("GEMINI_API_KEY");
+    setHasApiKey(false);
+    setApiKeyInput("");
+    setIsQuotaExceeded(false);
   };
 
   const handleError = (err: any) => {
     const msg = err.message || JSON.stringify(err);
-    // Handle invalid key error by resetting state
-    if (msg.includes("Requested entity was not found")) {
-      setHasApiKey(false);
-      setError("API 키가 만료되었거나 유효하지 않습니다. 다시 연결해주세요.");
+    if (msg.includes("401") || msg.includes("API key not valid") || msg.includes("Requested entity was not found")) {
+      // 키가 유효하지 않으면 로그인 화면으로 리셋
+      handleResetApiKey();
+      setError("API 키가 만료되었거나 유효하지 않습니다. 다시 입력해주세요.");
       return;
     }
     setError(msg || "작업을 수행하는 도중 문제가 발생했습니다.");
@@ -115,13 +121,13 @@ function App() {
       <Layout>
         <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
           <Loader2 className="animate-spin text-emerald-600" size={40} />
-          <p className="text-slate-500 font-medium">시스템 보안 점검 중...</p>
+          <p className="text-slate-500 font-medium">설정 불러오는 중...</p>
         </div>
       </Layout>
     );
   }
 
-  // Welcome / API Key Connection Screen
+  // Welcome / API Key Input Screen
   if (!hasApiKey) {
     return (
       <Layout>
@@ -165,23 +171,46 @@ function App() {
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-8 text-center space-y-4">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-50 text-amber-700 rounded-full text-xs font-bold border border-amber-100 mb-2">
-                  <Lock size={12} />
-                  <span>Google AI Studio 보안 연결</span>
+              <div className="border-t border-slate-100 pt-8 space-y-4">
+                <div className="space-y-3">
+                  <label className="block text-sm font-bold text-slate-700 ml-1">
+                    Google Gemini API 키 입력
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Key className="text-slate-400" size={18} />
+                    </div>
+                    <input
+                      type="password"
+                      value={apiKeyInput}
+                      onChange={(e) => setApiKeyInput(e.target.value)}
+                      placeholder="AIzaSy... 로 시작하는 키를 입력하세요"
+                      className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-mono text-sm"
+                    />
+                  </div>
+                  {error && <p className="text-red-500 text-xs font-bold ml-1">{error}</p>}
                 </div>
                 
                 <button
-                  onClick={handleOpenSelectKey}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white text-lg font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transform transition-all active:scale-95 flex items-center justify-center gap-3 group"
+                  onClick={handleSaveApiKey}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white text-lg font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transform transition-all active:scale-[0.98] flex items-center justify-center gap-2 group"
                 >
-                  <Key className="group-hover:text-emerald-400 transition-colors" size={20} />
-                  Google API 키 연결하고 시작하기
+                  시작하기
                   <ChevronRight size={20} className="text-slate-500 group-hover:translate-x-1 transition-transform" />
                 </button>
-                <p className="text-xs text-slate-400">
-                  * API 키는 서버에 저장되지 않으며, 현재 세션의 브라우저에서만 안전하게 사용됩니다.
-                </p>
+                
+                <div className="flex items-center justify-center gap-2 text-xs text-slate-400 mt-4">
+                  <Lock size={12} />
+                  <span>입력한 키는 브라우저 로컬 스토리지에만 안전하게 저장됩니다.</span>
+                  <a 
+                    href="https://aistudio.google.com/app/apikey" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-emerald-600 hover:underline font-bold"
+                  >
+                    API 키 발급받기
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -196,6 +225,12 @@ function App() {
       <div className="space-y-8">
         {step === 'ideas' && (
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6 animate-fadeIn">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+               <h2 className="text-lg font-bold text-slate-800">새로운 영상 기획</h2>
+               <button onClick={handleResetApiKey} className="text-xs text-slate-400 hover:text-red-500 underline">
+                 API 키 변경
+               </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-slate-700">
@@ -294,7 +329,7 @@ function App() {
               </div>
             </div>
             <button 
-              onClick={handleOpenSelectKey}
+              onClick={handleResetApiKey}
               className="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-amber-700 transition-colors whitespace-nowrap"
             >
               키 다시 연결
@@ -332,7 +367,7 @@ function App() {
           <ScriptViewer 
             initialSections={scriptSections} 
             title={selectedIdea.title} 
-            protagonistName={protagonistName}
+            protagonistName={protagonistName} 
             scriptType={scriptType}
             onBack={reset} 
           />
