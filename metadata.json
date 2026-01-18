@@ -1,0 +1,7 @@
+{
+  "name": "경제유튜브생성기 파이널 01/18수정",
+  "description": "금융 및 경제 관련 유튜브 대본과 스토리보드를 생성하는 전문 AI 도구입니다.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
