@@ -127,8 +127,11 @@ function App() {
     );
   }
 
-  // Welcome / API Key Input Screen
-  if (!hasApiKey) {
+  // 초기 상태 판단: 아이디어가 없고, 스텝이 아이디어 단계일 때만 '완전 초기 상태'로 간주
+  const isFreshState = ideas.length === 0 && step === 'ideas';
+
+  // Welcome / API Key Input Screen (Only show this if completely fresh start)
+  if (!hasApiKey && isFreshState) {
     return (
       <Layout>
         <div className="max-w-2xl mx-auto py-12 px-4 animate-fadeIn">
@@ -219,12 +222,59 @@ function App() {
     );
   }
 
-  // Main App Interface
+  // Main App Interface with Modal Overlay for API Key Re-entry
   return (
     <Layout>
-      <div className="space-y-8">
+      {/* Modal Overlay for API Key Re-entry (Preserves state behind it) */}
+      {!hasApiKey && !isFreshState && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-slideUp">
+            <div className="bg-slate-900 p-6 text-center">
+              <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white shadow-lg">
+                <Key size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-white">API 키 재설정</h3>
+              <p className="text-slate-400 text-sm mt-2">
+                새로운 API 키를 입력하면<br/>현재 작업 내용을 유지한 채 계속할 수 있습니다.
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+               <div className="space-y-2">
+                  <label className="block text-sm font-bold text-slate-700">
+                    Google Gemini API 키
+                  </label>
+                  <input
+                    type="password"
+                    value={apiKeyInput}
+                    onChange={(e) => setApiKeyInput(e.target.value)}
+                    placeholder="AIzaSy... 키 입력"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-mono text-sm"
+                  />
+                  {error && <p className="text-red-500 text-xs font-bold">{error}</p>}
+                </div>
+                
+                <button
+                  onClick={handleSaveApiKey}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl shadow-lg transform transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 size={18} />
+                  키 저장하고 계속하기
+                </button>
+                
+                <div className="text-center pt-2">
+                   <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-xs text-slate-400 hover:text-emerald-600 underline">
+                     새로운 키 발급받기
+                   </a>
+                </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={`space-y-8 transition-all duration-300 ${!hasApiKey ? 'blur-sm pointer-events-none select-none' : ''}`}>
         {step === 'ideas' && (
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6 animate-fadeIn">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
             <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                <h2 className="text-lg font-bold text-slate-800">새로운 영상 기획</h2>
                <button onClick={handleResetApiKey} className="text-xs text-slate-400 hover:text-red-500 underline">
@@ -309,7 +359,7 @@ function App() {
           </div>
         )}
 
-        {error && (
+        {error && !isQuotaExceeded && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-start gap-3 animate-slideUp">
              <AlertCircle className="shrink-0 mt-0.5" size={18} />
              <div>
